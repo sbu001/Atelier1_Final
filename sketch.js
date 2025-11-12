@@ -23,6 +23,11 @@ const STRESS_VISUAL_INERTIA = 0.12;  // How smoothly visuals change
 let character;
 let idleAnimation;
 let walkAnimation;
+let dulciaAnimation;
+
+let idleAnimationVisible;
+let walkAnimationVisible;
+let dulciaAnimationVisible;
 
 // Movement settings - Autonomous wandering
 const BASE_WALK_SPEED = 2.5;
@@ -54,6 +59,8 @@ function preload() {
   
   // Load walk animation (13 frames)
   walkAnimation = loadImage('grinder.png');
+
+  dulciaAnimation = loadImage("dulcia.png");
 }
 
 // ==============================================
@@ -67,7 +74,7 @@ function setup() {
   lockGestures();
   
   // Enable device motion sensors with tap
-  enableGyroTap('Tap to enable shake detection');
+  enableGyroTap('Tap to start');
   
   // Turn off physics gravity
   world.gravity.y = 0;
@@ -94,54 +101,44 @@ function setup() {
 // ==============================================
 function draw() {
   background(162, 210, 255);  // Light blue sky background
-  
+  if (idleAnimationVisible == true){
+    image(idleAnimation)
+  }
+  if (walkAnimationVisible == true){
+    image(walkAnimation)
+  }
+  if(dulciaAnimationVisible == true){
+    image(dulciaAnimation, width/2-50, height/2-100, 100, 250)
+  }
   // Check if sensors are enabled
   sensorsActive = window.sensorsEnabled || false;
   
   // Update systems
   updateShakeIntensity();
   updateStressParameter();
-  //updateCharacterColor();
   updateStressJitter();
   updateMovementSpeed();
   
-  // Move character
   moveCharacterToTarget();
-  
-  // Visual elements
-  // drawShakeIndicator();
   drawStressBar();
-  // UI overlay
-//   if (showUI) {
-//     drawUI();
-//   }
-	if(stress> 99){
+	if(stress>= 99){
 		for (let i = 0; i < 10; i++) {
 			fill(random(127, 176), random(85, 137), random(57, 104));
 			ellipse(random(width), random(height), random(5, 30), random(5, 30));
 		}	
   }
+  if(stress>= 99){
+    dulciaAnimationVisible = true;
+    walkAnimationVisible = false;
+    idleAnimationVisible = false;
+  }
 }
-
-// ==============================================
-// INPUT DETECTION: Device Shake Event
-// ==============================================
-// deviceShaken() is a p5.js EVENT CALLBACK (like mousePressed)
-// It's automatically called when the device is shaken
 function deviceShaken() {
-  // Only respond if sensors are enabled
   if (window.sensorsEnabled) {
-    // Increase global shake intensity variable
     shakeIntensity += 0.1;
-    
-    // Cap shake intensity
     shakeIntensity = constrain(shakeIntensity, 0, 10);
-    
-    // Add stress based on shake
     stress += STRESS_SHAKE_INCREASE;
     stress = constrain(stress, 0, 100);
-    
-    console.log('🔔 SHAKE DETECTED! Intensity:', shakeIntensity.toFixed(2), 'Stress:', stress.toFixed(1));
     // Trigger movement: pick a new X target relative to current position
     if (typeof character !== 'undefined' && character != null) {
       // Move horizontally between -200 and +200 pixels from current X (clamped to screen margins)
@@ -156,7 +153,6 @@ function deviceShaken() {
 
 // PARAMETER UPDATE: Shake Intensity
 function updateShakeIntensity() {
-  // Shake intensity naturally decays over time
   shakeIntensity *= SHAKE_DECAY;
   
   // Clamp to zero if very small
@@ -171,19 +167,13 @@ function updateShakeIntensity() {
 function updateStressParameter() {
   // Natural stress recovery (always happening)
   stress -= STRESS_RECOVERY;
-  stress = constrain(stress, 0, 100);
+  stress = constrain(stress, 0, 200);
   
   // Update smooth display value
   displayStress = lerp(displayStress, stress, STRESS_VISUAL_INERTIA);
 }
-
-// ==============================================
-// CHARACTER AI: Autonomous Wandering
-// ==============================================
 function updateWandering() {
-  // Timer to choose new destinations
-  wanderTimer++;
-  
+  wanderTimer++;  
   if (wanderTimer >= WANDER_INTERVAL) {
     chooseNewWanderTarget();
     wanderTimer = 0;
@@ -191,19 +181,15 @@ function updateWandering() {
 }
 
 function chooseNewWanderTarget() {
-  // Pick random point on screen (with margins)
-  targetX = random(80, width - 80);
-  // Keep vertical position fixed so wandering only affects X
-  if (typeof character !== 'undefined' && character != null) {
-    targetY = character.y;
-  } else {
-    // fallback if character not initialized yet
-    targetY = height / 2;
-  }
+  // THIS FUNCTION IS NOT USED ANYMORE (movement is shake-triggered only)
+  // Kept for reference but targetX/Y should only change on shake
+  // If you want to re-enable wandering, modify deviceShaken() instead
   
+  targetX = random(80, width - 80); 
+  if (typeof character !== 'undefined' && character != null) {
+    targetY = character.y;  // Keep Y at current position (was forcing 500-700)
+  }
 }
-
-
 
 // ==============================================
 // OUTPUT FUNCTION: Stress Jitter
@@ -215,7 +201,7 @@ function updateStressJitter() {
   
   if (stress >= STRESS_PANIC_THRESHOLD) {
     // Panic level - extreme jitter
-    jitterAmount = map(stress, STRESS_PANIC_THRESHOLD, 100, 3, 8);
+    jitterAmount = map(stress, STRESS_PANIC_THRESHOLD, 200, 3, 8);
     // Add extra jitter based on current shake intensity
     jitterAmount += shakeIntensity * 0.5;
   } else if (stress >= STRESS_WARNING_THRESHOLD) {
@@ -285,11 +271,6 @@ function moveCharacterToTarget() {
   }
 }
 
-// ==============================================
-// INPUT HANDLING: Touch/Click
-// ==============================================
-// No mouse/touch input needed - character wanders autonomously
-// Only shake detection affects the character
 
 function mousePressed() {
   return false;  // Prevent default
@@ -299,12 +280,7 @@ function touchStarted() {
   return false;  // Prevent default
 }
 
-// Toggle UI with keyboard
-function keyPressed() {
-  if (key === ' ') {
-    showUI = !showUI;
-  }
-}
+
 // ==============================================
 // VISUAL FEEDBACK: Stress Bar
 // ==============================================
