@@ -89,6 +89,10 @@ function setup() {
   character.addAni('idle', idleAnimation);
   character.addAni('walk', walkAnimation);
   character.changeAni('walk');  // Start walking
+  // initialize visibility flags (true = draw the corresponding image/animation)
+  idleAnimationVisible = false;
+  walkAnimationVisible = true;
+  dulciaAnimationVisible = false;
   
   // Set initial random target position for wandering
   // Do not pick an initial wander target - movement is triggered by shaking
@@ -101,14 +105,23 @@ function setup() {
 // ==============================================
 function draw() {
   background(162, 210, 255);  // Light blue sky background
-  if (idleAnimationVisible == true){
-    image(idleAnimation)
+  // Ensure sprite visibility matches the visible flags so it completely disappears
+  if (typeof character !== 'undefined' && character != null) {
+    if (walkAnimationVisible === true || idleAnimationVisible === true) {
+      character.visible = true;
+    } else {
+      character.visible = false;
+    }
   }
-  if (walkAnimationVisible == true){
-    image(walkAnimation)
+
+  if (idleAnimationVisible === true) {
+    image(idleAnimation);
   }
-  if(dulciaAnimationVisible == true){
-    image(dulciaAnimation, width/2-50, height/2-100, 100, 250)
+  if (walkAnimationVisible === true) {
+    image(walkAnimation);
+  }
+  if (dulciaAnimationVisible === true) {
+    image(dulciaAnimation, width/2-50, height/2-100, 100, 250);
   }
   // Check if sensors are enabled
   sensorsActive = window.sensorsEnabled || false;
@@ -184,11 +197,12 @@ function chooseNewWanderTarget() {
   // THIS FUNCTION IS NOT USED ANYMORE (movement is shake-triggered only)
   // Kept for reference but targetX/Y should only change on shake
   // If you want to re-enable wandering, modify deviceShaken() instead
-  
+
   targetX = random(80, width - 80); 
-  if (typeof character !== 'undefined' && character != null) {
-    targetY = character.y;  // Keep Y at current position (was forcing 500-700)
-  }
+    if (typeof character !== 'undefined' && character != null) {
+      targetY = character.y;  // Keep Y at current position (was forcing 500-700)
+    }
+  
 }
 
 // ==============================================
